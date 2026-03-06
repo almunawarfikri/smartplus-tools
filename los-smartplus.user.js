@@ -4,6 +4,8 @@
 // @version      15.0
 // @description  LOS RS + LOS BPJS (tanpa Tarif RS) + cache + fast + sort
 // @match        http://192.168.3.16/smartplus/erm_ranap*
+// @updateURL    https://raw.githubusercontent.com/almunawarfikri/smartplus-losrsbpjs/main/los-smartplus.user.js
+// @downloadURL  https://raw.githubusercontent.com/almunawarfikri/smartplus-losrsbpjs/main/los-smartplus.user.js
 // @grant        none
 // ==/UserScript==
 
@@ -202,5 +204,6 @@ function init(){
 }
 
 setTimeout(init,2000);
+
 
 })();
