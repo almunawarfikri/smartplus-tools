@@ -5,8 +5,8 @@
 // @description  Mencegah klik membuka detail pasien pada kolom LOS RS, LOS BPJS dan Tarif RS
 // @author       Fikri
 // @match        http://192.168.3.16/smartplus/erm_ranap*
-// @updateURL    https://raw.githubusercontent.com/almunawarfikri/smartplus-losrsbpjs/main/disableclick.user.js
-// @downloadURL  https://raw.githubusercontent.com/almunawarfikri/smartplus-losrsbpjs/main/disableclick.user.js
+// @updateURL    https://raw.githubusercontent.com/almunawarfikri/smartplus-tools/main/disableclick.user.js
+// @downloadURL  https://raw.githubusercontent.com/almunawarfikri/smartplus-tools/main/disableclick.user.js
 // @grant        none
 // ==/UserScript==
 
