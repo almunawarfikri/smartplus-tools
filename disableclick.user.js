@@ -1,9 +1,12 @@
 // ==UserScript==
 // @name         Disable Klik Kolom Casemix
 // @namespace    http://tampermonkey.net/
-// @version      1.0
+// @version      1.2
 // @description  Mencegah klik membuka detail pasien pada kolom LOS RS, LOS BPJS dan Tarif RS
+// @author       Fikri
 // @match        http://192.168.3.16/smartplus/erm_ranap*
+// @updateURL    https://raw.githubusercontent.com/almunawarfikri/smartplus-losrsbpjs/main/disableclick.user.js
+// @downloadURL  https://raw.githubusercontent.com/almunawarfikri/smartplus-losrsbpjs/main/disableclick.user.js
 // @grant        none
 // ==/UserScript==
 
@@ -11,11 +14,11 @@
 
 'use strict';
 
-function disableKlik(){
+function getTargetIndex(){
 
     let th=document.querySelectorAll("#myTable thead th");
 
-    let targetIndex=[];
+    let index=[];
 
     th.forEach((h,i)=>{
 
@@ -26,35 +29,41 @@ function disableKlik(){
             text==="LOS BPJS" ||
             text==="Tarif RS"
         ){
-            targetIndex.push(i);
+            index.push(i);
         }
 
     });
 
-    if(targetIndex.length===0) return;
-
-    let rows=document.querySelectorAll("#myTable tbody tr");
-
-    rows.forEach(row=>{
-
-        let cells=row.querySelectorAll("td");
-
-        targetIndex.forEach(i=>{
-
-            let cell=cells[i];
-
-            if(!cell) return;
-
-            cell.addEventListener("click", e=>e.stopPropagation());
-            cell.addEventListener("mousedown", e=>e.stopPropagation());
-            cell.addEventListener("dblclick", e=>e.stopPropagation());
-
-        });
-
-    });
+    return index;
 
 }
 
-setInterval(disableKlik,1000);
+function blockClick(e){
+
+    let cell = e.target.closest("td");
+
+    if(!cell) return;
+
+    let row = cell.parentElement;
+
+    let cells = [...row.children];
+
+    let index = cells.indexOf(cell);
+
+    let targetIndex = getTargetIndex();
+
+    if(targetIndex.includes(index)){
+
+        e.stopImmediatePropagation();
+        e.stopPropagation();
+        e.preventDefault();
+
+    }
+
+}
+
+document.addEventListener("click", blockClick, true);
+document.addEventListener("mousedown", blockClick, true);
+document.addEventListener("dblclick", blockClick, true);
 
 })();
