@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Tarif RS
 // @namespace    http://tampermonkey.net/
-// @version      16.0
-// @description  Tarik Tarif RS dari Puding (lebih cepat)
+// @version      17.0
+// @description  Tarif RS dengan cache lokal (lebih cepat)
 // @match        http://192.168.3.16/smartplus/erm_ranap*
 // @updateURL    https://raw.githubusercontent.com/almunawarfikri/smartplus-tools/main/tarifrs-epuding.user.js
 // @downloadURL  https://raw.githubusercontent.com/almunawarfikri/smartplus-tools/main/tarifrs-epuding.user.js
@@ -15,7 +15,34 @@
 'use strict';
 
 
-/* ================= FORMAT RUPIAH ================= */
+/* ================= CACHE ================= */
+
+const CACHE_KEY = "smartplus_tarif_cache";
+
+function loadCache(){
+
+    try{
+
+        return JSON.parse(localStorage.getItem(CACHE_KEY)) || {};
+
+    }catch{
+
+        return {};
+
+    }
+
+}
+
+function saveCache(data){
+
+    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+
+}
+
+let cache = loadCache();
+
+
+/* ================= FORMAT ================= */
 
 function rupiah(n){
 
@@ -45,7 +72,7 @@ function ambilTarif(html){
 }
 
 
-/* ================= AMBIL ID REG ================= */
+/* ================= ID REG ================= */
 
 function idReg(url){
 
@@ -56,7 +83,7 @@ function idReg(url){
 }
 
 
-/* ================= FETCH TARIF ================= */
+/* ================= FETCH ================= */
 
 function fetchTarif(id){
 
@@ -79,7 +106,7 @@ function fetchTarif(id){
 }
 
 
-/* ================= TAMBAH HEADER ================= */
+/* ================= HEADER ================= */
 
 function setup(){
 
@@ -108,8 +135,6 @@ async function processRow(row){
 
     td.className="tarif-cell";
 
-    td.innerText="...";
-
     row.querySelector("td:last-child").before(td);
 
     let link=row.querySelector("td:last-child a");
@@ -122,27 +147,37 @@ async function processRow(row){
 
     }
 
+    let id=idReg(link.href);
+
+    if(!id){
+
+        td.innerText="-";
+
+        return;
+
+    }
+
+
+    /* tampilkan cache dulu */
+
+    if(cache[id]){
+
+        td.innerText = rupiah(cache[id]);
+
+    }else{
+
+        td.innerText = "...";
+
+    }
+
+
+    /* fetch update */
+
     try{
-
-        let id=idReg(link.href);
-
-        if(!id){
-
-            td.innerText="-";
-
-            return;
-
-        }
 
         let html=await fetchTarif(id);
 
-        if(!html){
-
-            td.innerText="-";
-
-            return;
-
-        }
+        if(!html) return;
 
         let tarif=ambilTarif(html);
 
@@ -152,18 +187,27 @@ async function processRow(row){
 
         }
 
-        td.innerText=rupiah(tarif);
+        if(!tarif) return;
 
-    }catch{
 
-        td.innerText="-";
+        /* jika tarif berubah */
 
-    }
+        if(cache[id] !== tarif){
+
+            cache[id] = tarif;
+
+            saveCache(cache);
+
+            td.innerText = rupiah(tarif);
+
+        }
+
+    }catch{}
 
 }
 
 
-/* ================= RUN (PARALLEL + BATCH) ================= */
+/* ================= RUN ================= */
 
 async function run(){
 
@@ -191,7 +235,6 @@ function init(){
     run();
 
 }
-
 
 setTimeout(init,1500);
 
