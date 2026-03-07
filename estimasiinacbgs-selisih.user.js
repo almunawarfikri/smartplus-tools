@@ -18,18 +18,23 @@
 const inacbgTarif = [
 
 { keywords: ["tb paru level 2"], tarif: 5234900 },
-{ keywords: ["tb paru","tb","bekas tb"], tarif: 4381700 },
+{ keywords: ["tb paru","tb","tbc"], tarif: 4381700 },
 { keywords: ["tb dih"], tarif: 3419900 },
+{ keywords: ["bekas tb"], tarif: 4226800 },
+  
+{ keywords: ["bp level 2","bronchopneumonia level 2"], tarif: 4696200 },
+{ keywords: ["bp","bronchopneumonia","broncho","pneumonia"], tarif: 2915200 },
+{ keywords: ["bronchitis akut","acute bronchitis"], tarif: 2915200 },  
 
-{ keywords: ["bp level 2","bronchopneumonia level 2"], tarif: 4500000 },
-{ keywords: ["bp","bronchopneumonia","broncho","pneumonia"], tarif: 3650900 },
-
-{ keywords: ["asma level 2"], tarif: 3093400 },
-{ keywords: ["asma"], tarif: 2249100 },
+{ keywords: ["asma level 2", "ppok level 2"], tarif: 3093400 },
+{ keywords: ["asma", "ppok"], tarif: 2249100 },
 
 { keywords: ["stroke level 2","cerebral infark level 2"], tarif: 5540700 },
 { keywords: ["stroke","cerebral infark","snh"], tarif: 4077800 },
-
+{ keywords: ["stroke lama", "stroke iskemik lama", "sequele stroke"], tarif: 3242600 },
+{ keywords: ["stroke lama level 2", "stroke iskemik lama level 2", "sequele stroke level 2" ], tarif: 3772100 },  
+{ keywords: ["migrain vestibular", "migrain"], tarif: 2155900 },
+  
 { keywords: ["stemi"], tarif: 3509100 },
 { keywords: ["uap","unstable angina"], tarif: 3633300 },
 { keywords: ["chf"], tarif: 2867100 },
@@ -39,17 +44,17 @@ const inacbgTarif = [
 
 { keywords: ["isk","infeksi saluran kemih"], tarif: 2479100 },
 { keywords: ["ispa"], tarif: 2000700 },
-{ keywords: ["df","dhf","df dhf"], tarif: 1959100 },
+{ keywords: ["df","dhf","df dhf", "dengue fever"], tarif: 1959100 },
 
 { keywords: ["dm","hiperglikemia"], tarif: 3648700 },
 { keywords: ["hypoglikemia"], tarif: 3648700 },
 
-{ keywords: ["abses dm"], tarif: 3648700 },
-{ keywords: ["abses dm level 2"], tarif: 4797000 },
-{ keywords: ["abses non dm"], tarif: 1659600 },
+{ keywords: ["abses + dm"], tarif: 3648700 },
+{ keywords: ["abses + dm level 2"], tarif: 4797000 },
+{ keywords: ["abses"], tarif: 1659600 },
 
 { keywords: ["abdominal pain","abd pain", "vi", "viral infection"], tarif: 1652000 },
-{ keywords: ["dyspepsia","bii","bi", "Bacterial Intestinal Infection", "bacterial infection"], tarif: 1361300 },
+{ keywords: ["dadrs", "dads", "dyspepsia","bii","bi", "Cyclic Vomiting", "Diarrhoea And Gastroenteritis", "Bacterial Intestinal Infection", "bacterial infection"], tarif: 1361300 },
 { keywords: ["hematemesis"], tarif: 1361300 },
 { keywords: ["melena anemia"], tarif: 1934300 },
 
@@ -60,7 +65,9 @@ const inacbgTarif = [
 { keywords: ["hidronefrosis"], tarif: 3581900 },
 
 { keywords: ["lbp"], tarif: 3000100 },
-
+{ keywords: ["morbili", "Measles"], tarif: 1959100 },
+{ keywords: ["appendicitis acute", "App", "App Akut], tarif: 3668500 },
+{ keywords: ["ht"], tarif: 2119000 },             
 { keywords: ["dvt"], tarif: 4668700 }
 
 ];
