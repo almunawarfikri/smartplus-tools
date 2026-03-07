@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Disable Klik Kolom Casemix
 // @namespace    http://tampermonkey.net/
-// @version      1.4
-// @description  Hanya kolom Action yang bisa diklik, tapi text masih bisa dicopy
+// @version      1.5
+// @description  Hanya kolom Action yang bisa diklik pada tabel pasien
 // @author       Fikri
 // @match        http://192.168.3.16/smartplus/erm_ranap*
 // @updateURL    https://raw.githubusercontent.com/almunawarfikri/smartplus-tools/main/disableclick.user.js
@@ -14,18 +14,29 @@
 
 'use strict';
 
+
+/* hanya aktif jika tabel pasien ada */
+function isCasemixTable(){
+
+    return document.querySelector("#myTable");
+
+}
+
+
 function getActionIndex(){
 
-    let th = document.querySelectorAll("#myTable thead th");
+    let th=document.querySelectorAll("#myTable thead th");
 
-    let actionIndex = -1;
+    let actionIndex=-1;
 
     th.forEach((h,i)=>{
 
-        let text = h.innerText.trim();
+        let text=h.innerText.trim();
 
-        if(text === "Action"){
-            actionIndex = i;
+        if(text==="Action"){
+
+            actionIndex=i;
+
         }
 
     });
@@ -34,32 +45,38 @@ function getActionIndex(){
 
 }
 
+
 function blockClick(e){
 
-    let cell = e.target.closest("td");
+    if(!isCasemixTable()) return;
+
+    let cell=e.target.closest("td");
 
     if(!cell) return;
 
-    let row = cell.parentElement;
+    let row=cell.parentElement;
 
-    let cells = [...row.children];
+    let cells=[...row.children];
 
-    let index = cells.indexOf(cell);
+    let index=cells.indexOf(cell);
 
-    let actionIndex = getActionIndex();
+    let actionIndex=getActionIndex();
 
-    if(index !== actionIndex){
+    if(index!==actionIndex){
 
         e.stopImmediatePropagation();
+
         e.stopPropagation();
+
         e.preventDefault();
 
     }
 
 }
 
-// hanya blok klik saja
-document.addEventListener("click", blockClick, true);
-document.addEventListener("dblclick", blockClick, true);
+
+document.addEventListener("click",blockClick,true);
+
+document.addEventListener("dblclick",blockClick,true);
 
 })();
