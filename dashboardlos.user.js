@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Dashboard TKMKB
 // @namespace    http://tampermonkey.net/
-// @version      1.3
-// @description  Dashboard LOS + Ruangan
+// @version      1.4
+// @description  Dashboard LOS + Ruangan + Dokter
 // @author       Fikri
 // @match        http://192.168.3.16/smartplus/erm_ranap*
 // @updateURL    https://raw.githubusercontent.com/almunawarfikri/smartplus-tools/main/dashboardlos.user.js
@@ -44,9 +44,14 @@ const style = `
     border-radius:4px;
     margin-left:5px;
 }
+
+.dokter-list{
+    margin-top:6px;
+    font-size:13px;
+}
 `;
 
-/* ================= MASUKKAN STYLE KE PAGE ================= */
+/* ================= STYLE INSERT ================= */
 
 const styleSheet = document.createElement("style");
 styleSheet.innerText = style;
@@ -66,10 +71,25 @@ function hitungStatistik(){
 
     let ruang4={};
     let ruang5={};
+    let dokter={};
 
     rows.forEach(row=>{
 
         const cells=[...row.cells];
+
+        /* ===== DOKTER ===== */
+
+        const dokterCell=cells.find(c=>c.innerText.includes("Sp"));
+
+        if(dokterCell){
+
+            let nama=dokterCell.innerText.trim().split("\n")[0];
+
+            dokter[nama]=(dokter[nama]||0)+1;
+
+        }
+
+        /* ===== LOS ===== */
 
         const losCell=cells.find(c=>c.innerText.includes("Hari"));
 
@@ -107,12 +127,12 @@ function hitungStatistik(){
 
     });
 
-    return {total,hijau,los4,los5,ruang4,ruang5};
+    return {total,hijau,los4,los5,ruang4,ruang5,dokter};
 
 }
 
 
-/* ================= AMBIL RUANGAN ================= */
+/* ================= RUANGAN ================= */
 
 function getRuangan(cells){
 
@@ -139,7 +159,7 @@ function getRuangan(cells){
 }
 
 
-/* ================= FORMAT RUANGAN ================= */
+/* ================= FORMAT RUANG ================= */
 
 function formatRuang(data){
 
@@ -152,15 +172,25 @@ function formatRuang(data){
     return `<span class="ruang-detail">(${arr.join(", ")})</span>`;
 }
 
+
+/* ================= FORMAT DOKTER ================= */
+
+function formatDokter(data){
+
+    let arr = Object.entries(data)
+        .sort((a,b)=>b[1]-a[1])
+        .map(d=>`${d[0]} (${d[1]})`);
+
+    return arr.join(" | ");
+
+}
+
+
 /* ================= DASHBOARD ================= */
 
 function buatDashboard(){
 
     if(document.getElementById("dashboardPasien")) return;
-
-    const styleSheet=document.createElement("style");
-    styleSheet.innerText=style;
-    document.head.appendChild(styleSheet);
 
     const div=document.createElement("div");
     div.id="dashboardPasien";
@@ -183,6 +213,10 @@ function buatDashboard(){
     &nbsp;&nbsp;
     <span class="dot merah"></span>
     LOS ≥5: ${d.los5} (${formatRuang(d.ruang5)})
+
+    <div class="dokter-list">
+    <b>Dokter :</b> ${formatDokter(d.dokter)}
+    </div>
 
     `;
 
