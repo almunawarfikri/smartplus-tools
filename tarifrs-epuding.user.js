@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Tarif RS
 // @namespace    http://tampermonkey.net/
-// @version      15.3
-// @description  Tarik Tarif RS dari Puding
+// @version      16.0
+// @description  Tarik Tarif RS dari Puding (lebih cepat)
 // @match        http://192.168.3.16/smartplus/erm_ranap*
 // @updateURL    https://raw.githubusercontent.com/almunawarfikri/smartplus-tools/main/tarifrs-epuding.user.js
 // @downloadURL  https://raw.githubusercontent.com/almunawarfikri/smartplus-tools/main/tarifrs-epuding.user.js
@@ -15,9 +15,14 @@
 'use strict';
 
 
+/* ================= FORMAT RUPIAH ================= */
+
 function rupiah(n){
+
     if(!n) return "-";
+
     return "Rp " + n.toLocaleString("id-ID");
+
 }
 
 
@@ -28,12 +33,15 @@ function ambilTarif(html){
     let match = html.match(/Total biaya perawatan terbaru[\s\S]*?Rp\s*([\d,.]+)/i);
 
     if(!match){
+
         match = html.match(/Rp\s*([\d,.]+)/i);
+
     }
 
     if(!match) return null;
 
     return parseInt(match[1].replace(/[.,]/g,""));
+
 }
 
 
@@ -82,6 +90,7 @@ function setup(){
     let t=document.createElement("th");
 
     t.innerText="Tarif RS";
+
     t.className="tarif-header";
 
     th[th.length-1].before(t);
@@ -137,9 +146,10 @@ async function processRow(row){
 
         let tarif=ambilTarif(html);
 
-        // tambahkan 5 % dari tarif yang didapat
-        if(tarif !== null){
-            tarif = Math.round(tarif * 1.05);   // atau: tarif += tarif * 0.05;
+        if(tarif!==null){
+
+            tarif=Math.round(tarif*1.05);
+
         }
 
         td.innerText=rupiah(tarif);
@@ -153,15 +163,19 @@ async function processRow(row){
 }
 
 
-/* ================= RUN ================= */
+/* ================= RUN (PARALLEL + BATCH) ================= */
 
 async function run(){
 
-    let rows=document.querySelectorAll("#myTable tbody tr");
+    let rows=[...document.querySelectorAll("#myTable tbody tr")];
 
-    for(let row of rows){
+    let batch=5;
 
-        await processRow(row);
+    for(let i=0;i<rows.length;i+=batch){
+
+        let slice=rows.slice(i,i+batch);
+
+        await Promise.all(slice.map(processRow));
 
     }
 
@@ -177,6 +191,7 @@ function init(){
     run();
 
 }
+
 
 setTimeout(init,1500);
 
