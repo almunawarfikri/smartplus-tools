@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Disable Klik Kolom Casemix
 // @namespace    http://tampermonkey.net/
-// @version      1.3
-// @description  Hanya kolom Action yang bisa diklik
+// @version      1.4
+// @description  Hanya kolom Action yang bisa diklik, tapi text masih bisa dicopy
 // @author       Fikri
 // @match        http://192.168.3.16/smartplus/erm_ranap*
 // @updateURL    https://raw.githubusercontent.com/almunawarfikri/smartplus-tools/main/disableclick.user.js
@@ -48,7 +48,6 @@ function blockClick(e){
 
     let actionIndex = getActionIndex();
 
-    // jika bukan kolom Action → blok
     if(index !== actionIndex){
 
         e.stopImmediatePropagation();
@@ -59,8 +58,8 @@ function blockClick(e){
 
 }
 
+// hanya blok klik saja
 document.addEventListener("click", blockClick, true);
-document.addEventListener("mousedown", blockClick, true);
 document.addEventListener("dblclick", blockClick, true);
 
 })();
