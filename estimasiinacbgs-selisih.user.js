@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SmartPlus Estimasi INA-CBG + Selisih
 // @namespace    http://tampermonkey.net/
-// @version      1.0
+// @version      1.5
 // @match        http://192.168.3.16/smartplus/erm_ranap*
 // @updateURL    https://raw.githubusercontent.com/almunawarfikri/smartplus-tools/main/estimasiinacbgs-selisih.user.js
 // @downloadURL  https://raw.githubusercontent.com/almunawarfikri/smartplus-tools/main/estimasiinacbgs-selisih.user.js
