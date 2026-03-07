@@ -88,7 +88,7 @@ function singkatDokter(nama){
         "Ahmad Mekkah":"dr. Mekkah, Sp.PD",
         "Gogor Meisadona":"dr. Gogor, Sp.N",
         "Cut Arsy Rahmi":"dr. Cut, Sp.JP",
-        "Adjie Pratignyo":"dr. Adjie, Sp.B"
+        "Adjie Pratignyo":"dr. Adjie, Sp.B",
         "Widiawati Kurnia":"dr. WidKur, Sp.OG"
     };
 
