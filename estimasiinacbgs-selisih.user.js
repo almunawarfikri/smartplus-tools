@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SmartPlus Estimasi INA-CBG + Selisih
 // @namespace    http://tampermonkey.net/
-// @version      1.2
+// @version      1.2.2
 // @match        http://192.168.3.16/smartplus/erm_ranap*
 // @updateURL    https://raw.githubusercontent.com/almunawarfikri/smartplus-tools/main/estimasiinacbgs-selisih.user.js
 // @downloadURL  https://raw.githubusercontent.com/almunawarfikri/smartplus-tools/main/estimasiinacbgs-selisih.user.js
@@ -44,7 +44,7 @@ const inacbgTarif = [
 
 { keywords: ["isk","infeksi saluran kemih"], tarif: 2479100 },
 { keywords: ["ispa"], tarif: 2000700 },
-{ keywords: ["df","dhf","df dhf", "dengue fever"], tarif: 1959100 },
+{ keywords: ["df","dhf","df dhf", "dengue fever", "Dengue Haemorrhagic Fever"], tarif: 1959100 },
 
 { keywords: ["dm","hiperglikemia"], tarif: 3648700 },
 { keywords: ["hypoglikemia"], tarif: 3648700 },
@@ -53,7 +53,7 @@ const inacbgTarif = [
 { keywords: ["abses + dm level 2"], tarif: 4797000 },
 { keywords: ["abses"], tarif: 1659600 },
 
-{ keywords: ["abdominal pain","abd pain", "vi", "viral infection"], tarif: 1652000 },
+{ keywords: ["abdominal pain","abd pain", "vi", "viral infection", "viral infeksi"], tarif: 1652000 },
 { keywords: ["dadrs", "dads", "dyspepsia","bii","bi", "Cyclic Vomiting", "Diarrhoea And Gastroenteritis", "Bacterial Intestinal Infection", "bacterial infection"], tarif: 1361300 },
 { keywords: ["hematemesis"], tarif: 1361300 },
 { keywords: ["melena anemia"], tarif: 1934300 },
@@ -66,7 +66,7 @@ const inacbgTarif = [
 
 { keywords: ["lbp"], tarif: 3000100 },
 { keywords: ["morbili", "Measles"], tarif: 1959100 },
-{ keywords: ["appendicitis acute", "App", "App Akut"], tarif: 3668500 },
+{ keywords: ["appendicitis acute", "App", "App Akut", "Appendicitis Akut","Acute Appendicitis"], tarif: 3668500 },
 { keywords: ["ht"], tarif: 2119000 },
 { keywords: ["dvt"], tarif: 4668700 }
 
