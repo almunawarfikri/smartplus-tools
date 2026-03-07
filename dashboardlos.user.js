@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Dashboard TKMKB
 // @namespace    http://tampermonkey.net/
-// @version      1.6.1
+// @version      1.6.2
 // @description  Dashboard LOS + Ruangan + Dokter
 // @author       Fikri
 // @match        http://192.168.3.16/smartplus/erm_ranap*
@@ -188,6 +188,10 @@ function getRuangan(cells){
     const ruangCell=cells.find(c=>
         c.innerText.includes("RPU") ||
         c.innerText.includes("ICU") ||
+        c.innerText.includes("HCU") ||
+        c.innerText.includes("PICU") ||
+        c.innerText.includes("KEBIDANAN") ||
+        c.innerText.includes("KORIDOR") ||
         c.innerText.includes("ISOLASI")
     );
 
@@ -197,7 +201,12 @@ function getRuangan(cells){
 
     if(nama.includes("RPU-A")) return "RPU-A";
     if(nama.includes("RPU-B")) return "RPU-B";
+    if(nama.includes("RPU-C")) return "RPU-C";
     if(nama.includes("ICU")) return "ICU";
+    if(nama.includes("HCU")) return "HCU";
+    if(nama.includes("HCU")) return "PICU";
+    if(nama.includes("KEBIDANAN")) return "Kebidanan";
+    if(nama.includes("KORIDOR")) return "Koridor";
     if(nama.includes("ISOLASI")) return "ISOLASI";
 
     return null;
