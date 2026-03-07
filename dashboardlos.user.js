@@ -89,6 +89,7 @@ function singkatDokter(nama){
         "Gogor Meisadona":"dr. Gogor, Sp.N",
         "Cut Arsy Rahmi":"dr. Cut, Sp.JP",
         "Adjie Pratignyo":"dr. Adjie, Sp.B"
+        "Widiawati Kurnia":"dr. WidKur, Sp.OG"
 
     };
 
