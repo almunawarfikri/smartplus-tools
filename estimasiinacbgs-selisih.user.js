@@ -21,10 +21,10 @@ const inacbgTarif = [
 { keywords: ["tb paru","tb","tbc"], tarif: 4381700 },
 { keywords: ["tb dih"], tarif: 3419900 },
 { keywords: ["bekas tb"], tarif: 4226800 },
-  
+
 { keywords: ["bp level 2","bronchopneumonia level 2"], tarif: 4696200 },
 { keywords: ["bp","bronchopneumonia","broncho","pneumonia"], tarif: 2915200 },
-{ keywords: ["bronchitis akut","acute bronchitis"], tarif: 2915200 },  
+{ keywords: ["bronchitis akut","acute bronchitis"], tarif: 2915200 },
 
 { keywords: ["asma level 2", "ppok level 2"], tarif: 3093400 },
 { keywords: ["asma", "ppok"], tarif: 2249100 },
@@ -34,7 +34,7 @@ const inacbgTarif = [
 { keywords: ["stroke lama", "stroke iskemik lama", "sequele stroke"], tarif: 3242600 },
 { keywords: ["stroke lama level 2", "stroke iskemik lama level 2", "sequele stroke level 2" ], tarif: 3772100 },  
 { keywords: ["migrain vestibular", "migrain"], tarif: 2155900 },
-  
+
 { keywords: ["stemi"], tarif: 3509100 },
 { keywords: ["uap","unstable angina"], tarif: 3633300 },
 { keywords: ["chf"], tarif: 2867100 },
@@ -67,7 +67,7 @@ const inacbgTarif = [
 { keywords: ["lbp"], tarif: 3000100 },
 { keywords: ["morbili", "Measles"], tarif: 1959100 },
 { keywords: ["appendicitis acute", "App", "App Akut"], tarif: 3668500 },
-{ keywords: ["ht"], tarif: 2119000 },             
+{ keywords: ["ht"], tarif: 2119000 },
 { keywords: ["dvt"], tarif: 4668700 }
 
 ];
