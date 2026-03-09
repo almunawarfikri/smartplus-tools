@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SmartPlus Estimasi INA-CBG + Selisih
 // @namespace    http://tampermonkey.net/
-// @version      1.2.3
+// @version      1.2.5
 // @match        http://192.168.3.16/smartplus/erm_ranap*
 // @updateURL    https://raw.githubusercontent.com/almunawarfikri/smartplus-tools/main/estimasiinacbgs-selisih.user.js
 // @downloadURL  https://raw.githubusercontent.com/almunawarfikri/smartplus-tools/main/estimasiinacbgs-selisih.user.js
@@ -23,13 +23,13 @@ const inacbgTarif = [
     { keywords: ["asma level 2", "ppok level 2"], tarif: 3093400 },
     { keywords: ["asma", "ppok"], tarif: 2249100 },
     { keywords: ["stroke level 2","cerebral infark level 2"], tarif: 5540700 },
-    { keywords: ["stroke","cerebral infark","snh"], tarif: 4077800 },
+    { keywords: ["stroke","cerebral infark","snh", "Cerebral Infarction"], tarif: 4077800 },
     { keywords: ["stroke lama", "stroke iskemik lama", "sequele stroke"], tarif: 3242600 },
     { keywords: ["stroke lama level 2", "stroke iskemik lama level 2", "sequele stroke level 2" ], tarif: 3772100 },  
     { keywords: ["migrain vestibular", "migrain"], tarif: 2155900 },
     { keywords: ["stemi"], tarif: 3509100 },
     { keywords: ["uap","unstable angina"], tarif: 3633300 },
-    { keywords: ["chf"], tarif: 2867100 },
+    { keywords: ["chf", "Adhf"], tarif: 2867100 },
     { keywords: ["chf level 2"], tarif: 3387500 },
     { keywords: ["af level 2"], tarif: 4971100 },
     { keywords: ["hhd"], tarif: 2119000 },
@@ -41,8 +41,8 @@ const inacbgTarif = [
     { keywords: ["abses + dm"], tarif: 3648700 },
     { keywords: ["abses + dm level 2"], tarif: 4797000 },
     { keywords: ["abses"], tarif: 1659600 },
-    { keywords: ["abdominal pain","abd pain", "vi", "viral infection", "viral infeksi"], tarif: 1652000 },
-    { keywords: ["dadrs", "dads", "dyspepsia","bii","bi", "Cyclic Vomiting", "Diarrhoea And Gastroenteritis", "Bacterial Intestinal Infection", "bacterial infection"], tarif: 1361300 },
+    { keywords: ["abdominal pain","abd pain", "vi", "viral infection", "viral infeksi", "Typhoid Fever"], tarif: 1652000 },
+    { keywords: ["dadrs", "dads", "dyspepsia","bii","bi", "Cyclic Vomiting", "Diarrhoea And Gastroenteritis", "Bacterial Intestinal Infection", "bacterial infection", "Gastritis", "Gea"], tarif: 1361300 },
     { keywords: ["hematemesis"], tarif: 1361300 },
     { keywords: ["melena anemia"], tarif: 1934300 },
     { keywords: ["vertigo","bppv"], tarif: 1436900 },
@@ -53,7 +53,10 @@ const inacbgTarif = [
     { keywords: ["morbili", "Measles"], tarif: 1959100 },
     { keywords: ["appendicitis acute", "App", "App Akut", "Appendicitis Akut","Acute Appendicitis"], tarif: 3668500 },
     { keywords: ["ht"], tarif: 2119000 },
-    { keywords: ["dvt"], tarif: 4668700 }
+    { keywords: ["dvt"], tarif: 4668700 },
+    { keywords: ["Kejang Demam Simpleks", "KDS"], tarif: 2766600 }
+
+    
 ];
 
 /* ================= KOMORBID LEVEL 2 ================= */
