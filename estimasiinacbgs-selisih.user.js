@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SmartPlus Estimasi INA-CBG + Selisih
 // @namespace    http://tampermonkey.net/
-// @version      1.2.5
+// @version      1.2.6
 // @match        http://192.168.3.16/smartplus/erm_ranap*
 // @updateURL    https://raw.githubusercontent.com/almunawarfikri/smartplus-tools/main/estimasiinacbgs-selisih.user.js
 // @downloadURL  https://raw.githubusercontent.com/almunawarfikri/smartplus-tools/main/estimasiinacbgs-selisih.user.js
@@ -23,26 +23,26 @@ const inacbgTarif = [
     { keywords: ["asma level 2", "ppok level 2"], tarif: 3093400 },
     { keywords: ["asma", "ppok"], tarif: 2249100 },
     { keywords: ["stroke level 2","cerebral infark level 2"], tarif: 5540700 },
-    { keywords: ["stroke","cerebral infark","snh", "Cerebral Infarction"], tarif: 4077800 },
-    { keywords: ["stroke lama", "stroke iskemik lama", "sequele stroke"], tarif: 3242600 },
-    { keywords: ["stroke lama level 2", "stroke iskemik lama level 2", "sequele stroke level 2" ], tarif: 3772100 },  
-    { keywords: ["migrain vestibular", "migrain"], tarif: 2155900 },
+    { keywords: ["stroke","cerebral infark","snh","Cerebral Infarction"], tarif: 4077800 },
+    { keywords: ["stroke lama","stroke iskemik lama","sequele stroke"], tarif: 3242600 },
+    { keywords: ["stroke lama level 2","stroke iskemik lama level 2","sequele stroke level 2"], tarif: 3772100 },
+    { keywords: ["migrain vestibular","migrain"], tarif: 2155900 },
     { keywords: ["stemi"], tarif: 3509100 },
     { keywords: ["uap","unstable angina"], tarif: 3633300 },
-    { keywords: ["chf", "Adhf"], tarif: 2867100 },
+    { keywords: ["chf","Adhf"], tarif: 2867100 },
     { keywords: ["chf level 2"], tarif: 3387500 },
     { keywords: ["af level 2"], tarif: 4971100 },
     { keywords: ["hhd"], tarif: 2119000 },
     { keywords: ["isk","infeksi saluran kemih"], tarif: 2479100 },
     { keywords: ["ispa"], tarif: 2000700 },
-    { keywords: ["df","dhf","df dhf", "dengue fever", "Dengue Haemorrhagic Fever"], tarif: 1959100 },
+    { keywords: ["df","dhf","df dhf","dengue fever","Dengue Haemorrhagic Fever"], tarif: 1959100 },
     { keywords: ["dm","hiperglikemia"], tarif: 3648700 },
     { keywords: ["hypoglikemia"], tarif: 3648700 },
     { keywords: ["abses + dm"], tarif: 3648700 },
     { keywords: ["abses + dm level 2"], tarif: 4797000 },
     { keywords: ["abses"], tarif: 1659600 },
-    { keywords: ["abdominal pain","abd pain", "vi", "viral infection", "viral infeksi", "Typhoid Fever"], tarif: 1652000 },
-    { keywords: ["dadrs", "dads", "dyspepsia","bii","bi", "Cyclic Vomiting", "Diarrhoea And Gastroenteritis", "Bacterial Intestinal Infection", "bacterial infection", "Gastritis", "Gea"], tarif: 1361300 },
+    { keywords: ["abdominal pain","abd pain","vi","viral infection","viral infeksi","Typhoid Fever"], tarif: 1652000 },
+    { keywords: ["dadrs","dads","dyspepsia","bii","bi","Cyclic Vomiting","Diarrhoea And Gastroenteritis","Bacterial Intestinal Infection","bacterial infection","Gastritis","Gea"], tarif: 1361300 },
     { keywords: ["hematemesis"], tarif: 1361300 },
     { keywords: ["melena anemia"], tarif: 1934300 },
     { keywords: ["vertigo","bppv"], tarif: 1436900 },
@@ -50,13 +50,11 @@ const inacbgTarif = [
     { keywords: ["ckd"], tarif: 3043000 },
     { keywords: ["hidronefrosis"], tarif: 3581900 },
     { keywords: ["lbp"], tarif: 3000100 },
-    { keywords: ["morbili", "Measles"], tarif: 1959100 },
-    { keywords: ["appendicitis acute", "App", "App Akut", "Appendicitis Akut","Acute Appendicitis"], tarif: 3668500 },
+    { keywords: ["morbili","Measles"], tarif: 1959100 },
+    { keywords: ["appendicitis acute","App","App Akut","Appendicitis Akut","Acute Appendicitis"], tarif: 3668500 },
     { keywords: ["ht"], tarif: 2119000 },
     { keywords: ["dvt"], tarif: 4668700 },
-    { keywords: ["Kejang Demam Simpleks", "KDS"], tarif: 2766600 }
-
-    
+    { keywords: ["Kejang Demam Simpleks","KDS"], tarif: 2766600 }
 ];
 
 /* ================= KOMORBID LEVEL 2 ================= */
@@ -75,9 +73,20 @@ function normalize(text){
 
 function rupiah(n){
     if(!n && n !== 0) return "-";
-    // Menambahkan minus secara manual jika format toLocaleString tidak memunculkannya dengan benar
     let sign = n < 0 ? "-" : "";
     return "Rp " + sign + Math.abs(n).toLocaleString("id-ID");
+}
+
+/* ================= CEK PASIEN ICU ================= */
+function pasienICU(kelas){
+    kelas = (kelas || "").toLowerCase();
+
+    return (
+        kelas.includes("icu") ||
+        kelas.includes("picu") ||
+        kelas.includes("nicu") ||
+        kelas.includes("hcu")
+    );
 }
 
 /* ================= AMBIL DIAGNOSA UTAMA ================= */
@@ -106,7 +115,6 @@ function findTarifINA(diagnosa){
     let utama=normalize(diagnosaUtama(diagnosa));
     let level2=cekLevel2(diagnosa);
 
-    /* cek level 2 */
     if(level2){
         for(let item of inacbgTarif){
             for(let key of item.keywords){
@@ -119,7 +127,6 @@ function findTarifINA(diagnosa){
         }
     }
 
-    /* cek normal */
     for(let item of inacbgTarif){
         for(let key of item.keywords){
             if(key.includes("level 2")) continue;
@@ -134,12 +141,15 @@ function findTarifINA(diagnosa){
 
 /* ================= SCRIPT UTAMA ================= */
 function init(){
+
     let table=document.querySelector("#myTable");
     if(!table) return;
 
     let headers=table.querySelectorAll("thead th");
+
     let tarifIndex=-1;
     let actionIndex=-1;
+    let kelasIndex=4;
 
     headers.forEach((th,i)=>{
         if(th.innerText.includes("Tarif RS")) tarifIndex=i;
@@ -148,7 +158,6 @@ function init(){
 
     if(tarifIndex===-1) return;
 
-    /* tambah header */
     let thINA=document.createElement("th");
     thINA.innerText="Estimasi INA-CBG";
 
@@ -158,47 +167,56 @@ function init(){
     headers[actionIndex].before(thINA);
     headers[actionIndex].before(thSel);
 
-    /* isi tabel */
     let rows=table.querySelectorAll("tbody tr");
 
     rows.forEach(row=>{
+
         let cells=row.querySelectorAll("td");
-        // Jika baris kosong atau td tidak lengkap, skip
-        if (cells.length <= actionIndex) return;
+        if(cells.length <= actionIndex) return;
 
         let diagnosa=cells[6].innerText;
-        let tarifRS=parseInt(cells[tarifIndex].innerText.replace(/[^\d]/g,""))||0;
-        let estimasi=findTarifINA(diagnosa);
+        let kelas=cells[kelasIndex] ? cells[kelasIndex].innerText : "";
 
-        /* estimasi */
+        let tarifRS=parseInt(cells[tarifIndex].innerText.replace(/[^\d]/g,""))||0;
+
+        let estimasi;
+
+        if(pasienICU(kelas)){
+            estimasi = 16165300;
+        }else{
+            estimasi = findTarifINA(diagnosa);
+        }
+
         let tdINA=document.createElement("td");
         tdINA.innerText = estimasi > 0 ? rupiah(estimasi) : "-";
 
-        /* selisih */
         let tdSel=document.createElement("td");
-        
-        // Cek jika kedua tarif tersedia (Valid)
-        if(estimasi > 0 && tarifRS > 0) {
+
+        if(estimasi > 0 && tarifRS > 0){
+
             let selisih = estimasi - tarifRS;
+
             tdSel.innerText = rupiah(selisih);
 
             if(selisih < 0){
-                tdSel.style.background = "#d50000"; // Merah jika rugi
+                tdSel.style.background = "#d50000";
                 tdSel.style.color = "white";
                 tdSel.style.fontWeight = "bold";
-            } else {
-                tdSel.style.background = "#2e7d32"; // Hijau jika surplus
+            }else{
+                tdSel.style.background = "#2e7d32";
                 tdSel.style.color = "white";
                 tdSel.style.fontWeight = "bold";
             }
-        } else {
-            // Jika salah satu kosong/0, tampilkan strip tanpa warna
-            tdSel.innerText = "-";
+
+        }else{
+            tdSel.innerText="-";
         }
 
         cells[actionIndex].before(tdINA);
         cells[actionIndex].before(tdSel);
+
     });
+
 }
 
 setTimeout(init,1500);
