@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SmartPlus LOS RS & BPJS
 // @namespace    http://tampermonkey.net/
-// @version      15.3
+// @version      15.4
 // @description  LOS RS + LOS BPJS + cache + fast + sort
 // @match        http://103.83.178.90:38/smartplus/erm_ranap*
 // @updateURL    https://raw.githubusercontent.com/almunawarfikri/smartplus-tools/main/los-smartplus.user.js
@@ -221,3 +221,4 @@ function init(){
 setTimeout(init,2000);
 
 })();
+
