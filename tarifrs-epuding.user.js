@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Tarif RS SmartPlus (Instant Cache)
+// @name         Tarif RS SmartPlus (Ultra Fast Cache)
 // @namespace    http://tampermonkey.net/
-// @version      19.1
-// @description  Tarif RS langsung muncul dari cache lalu update background (Optimized)
+// @version      20.0
+// @description  Tarif RS instant cache + parallel fetch + retry system
 // @match        http://192.168.3.16/smartplus/erm_ranap*
 // @updateURL    https://raw.githubusercontent.com/almunawarfikri/smartplus-tools/main/tarifrs-epuding.user.js
 // @downloadURL  https://raw.githubusercontent.com/almunawarfikri/smartplus-tools/main/tarifrs-epuding.user.js
@@ -13,8 +13,13 @@
 (function(){
 'use strict';
 
+/* ================= CONFIG ================= */
+
+const CACHE_KEY = "smartplus_tarif_cache_v3";
+const MAX_PARALLEL = 6;     // jumlah request bersamaan
+const RETRY = 3;            // retry jika gagal
+
 /* ================= CACHE ================= */
-const CACHE_KEY = "smartplus_tarif_cache_v2";
 
 function loadCache(){
     try{
@@ -31,149 +36,217 @@ function saveCache(data){
 let cache = loadCache();
 
 /* ================= FORMAT ================= */
+
 function rupiah(n){
     if(!n) return "-";
     return "Rp " + n.toLocaleString("id-ID");
 }
 
 /* ================= AMBIL TARIF ================= */
+
 function ambilTarif(html){
+
     if(!html) return null;
-    
-    // 1. Bersihkan tag HTML (takutnya ada <span> atau <b> di antara Rp dan angka)
-    let cleanText = html.replace(/<[^>]+>/g, " ");
-    
-    // 2. Cari dengan regex yang lebih toleran (mendukung "Rp", "Rp.", "Rp .")
-    let match = cleanText.match(/Total biaya perawatan terbaru[\s\S]*?Rp[\s.]*([\d,.]+)/i);
-    if(!match){
-        match = cleanText.match(/Rp[\s.]*([\d,.]+)/i);
-    }
-    
+
+    let clean = html.replace(/<[^>]+>/g," ");
+
+    let match = clean.match(/Rp\s*([\d.,]+)/i);
+
     if(!match) return null;
-    
-    // 3. Ubah ke integer
-    let angka = parseInt(match[1].replace(/[.,]/g,""), 10);
+
+    let angka = parseInt(match[1].replace(/[.,]/g,""),10);
+
     return isNaN(angka) ? null : angka;
 }
 
 /* ================= ID REG ================= */
+
 function idReg(url){
-    if(!url) return null;
-    // Mengambil string terakhir setelah garis miring (/)
-    // Contoh: .../main_content/0226SA06643 -> 0226SA06643
-    let segments = url.split('/');
-    let id = segments.pop();
-    // Jika ada parameter tambahan di URL (?id=...), bersihkan
-    if (id.includes('?')) id = id.split('?')[0]; 
-    return id.trim() !== "" ? id : null;
+
+    let parts=url.split("/");
+    let id=parts.pop();
+
+    if(id.includes("?")) id=id.split("?")[0];
+
+    return id;
 }
 
 /* ================= FETCH ================= */
+
 function fetchTarif(id){
+
     return new Promise(resolve=>{
+
         GM_xmlhttpRequest({
+
             method:"GET",
+
             url:`http://192.168.3.15/puding/admin/updatetarifrscasemix.php?id_reg=${id}`,
-            timeout: 10000, // Tambah batas waktu agar tidak gantung
+
+            timeout:8000,
+
             onload:r=>resolve(r.responseText),
+
             onerror:()=>resolve(null),
+
             ontimeout:()=>resolve(null)
+
         });
+
     });
 }
 
+/* ================= RETRY ================= */
+
+async function fetchRetry(id){
+
+    for(let i=0;i<RETRY;i++){
+
+        let html=await fetchTarif(id);
+
+        if(html) return html;
+    }
+
+    return null;
+}
+
 /* ================= HEADER ================= */
+
 function setup(){
-    let th=document.querySelectorAll("#myTable thead th");
+
     if(document.querySelector(".tarif-header")) return;
 
+    let th=document.querySelectorAll("#myTable thead th");
+
     let t=document.createElement("th");
+
     t.innerText="Tarif RS";
+
     t.className="tarif-header";
+
     th[th.length-1].before(t);
 }
 
 /* ================= TAMPILKAN CACHE ================= */
+
 function tampilkanCache(){
+
     let rows=[...document.querySelectorAll("#myTable tbody tr")];
+
     rows.forEach(row=>{
+
         let td=document.createElement("td");
+
         td.className="tarif-cell";
+
         row.querySelector("td:last-child").before(td);
 
         let link=row.querySelector("td:last-child a");
+
         if(!link){
             td.innerText="-";
             return;
         }
 
         let id=idReg(link.href);
-        if(!id){
-            td.innerText="-";
-            return;
-        }
 
         if(cache[id]){
-            td.innerText = rupiah(cache[id]);
+
+            td.innerText=rupiah(cache[id]);
+
         }else{
-            td.innerText = "...";
+
+            td.innerText="...";
         }
+
     });
+
 }
 
-/* ================= UPDATE BACKGROUND ================= */
-async function updateTarif(){
-    let rows=[...document.querySelectorAll("#myTable tbody tr")];
-    
-    // Diubah menjadi proses antrean berurutan (Satu per satu)
-    // Untuk mencegah server lokal memblokir request karena kepenuhan
-    for(let i=0; i<rows.length; i++){
-        await processRow(rows[i]);
-        // Jeda 200 milidetik antar request agar server bernapas
-        await new Promise(r => setTimeout(r, 200)); 
-    }
-}
+/* ================= PROCESS ROW ================= */
 
 async function processRow(row){
+
     let td=row.querySelector(".tarif-cell");
+
     let link=row.querySelector("td:last-child a");
+
     if(!link) return;
 
     let id=idReg(link.href);
+
     if(!id) return;
 
-    try{
-        let html=await fetchTarif(id);
-        if(!html) {
-            if(td.innerText === "...") td.innerText = "Gagal";
-            return;
-        }
+    /* skip jika cache ada */
 
-        let tarif=ambilTarif(html);
+    if(cache[id]) return;
 
-        if(tarif!==null){
-            tarif=Math.round(tarif*1.05);
-            
-            if(cache[id] !== tarif){
-                cache[id] = tarif;
-                saveCache(cache);
-                td.innerText = rupiah(tarif);
-            } else if (td.innerText === "...") {
-                // Jika nilai di cache sama, tapi di layar masih "..." (misal reload cache awal)
-                td.innerText = rupiah(tarif);
-            }
-        } else {
-            // Jika HTML berhasil ditarik tapi tidak ada kata "Rp" di dalamnya
-            if(td.innerText === "...") td.innerText = "Tidak ada Tarif";
-        }
-    }catch{}
+    let html=await fetchRetry(id);
+
+    if(!html){
+
+        td.innerText="Gagal";
+
+        return;
+    }
+
+    let tarif=ambilTarif(html);
+
+    if(tarif!==null){
+
+        tarif=Math.round(tarif*1.05);
+
+        cache[id]=tarif;
+
+        saveCache(cache);
+
+        td.innerText=rupiah(tarif);
+
+    }else{
+
+        td.innerText="Tidak ada";
+    }
+}
+
+/* ================= WORKER ================= */
+
+async function worker(queue){
+
+    while(queue.length){
+
+        let row=queue.shift();
+
+        await processRow(row);
+    }
+}
+
+/* ================= UPDATE ================= */
+
+async function updateTarif(){
+
+    let rows=[...document.querySelectorAll("#myTable tbody tr")];
+
+    let queue=[...rows];
+
+    let workers=[];
+
+    for(let i=0;i<MAX_PARALLEL;i++){
+
+        workers.push(worker(queue));
+    }
+
+    await Promise.all(workers);
 }
 
 /* ================= INIT ================= */
+
 function init(){
+
     setup();
-    tampilkanCache();   // langsung tampil
-    updateTarif();      // update background
+
+    tampilkanCache();
+
+    updateTarif();
 }
 
 setTimeout(init,1200);
