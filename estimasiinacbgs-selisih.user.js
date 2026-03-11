@@ -34,19 +34,20 @@ const inacbgTarif = [
     { keywords: ["af level 2"], tarif: 4971100 },
     { keywords: ["hhd"], tarif: 2119000 },
     { keywords: ["isk","infeksi saluran kemih"], tarif: 2479100 },
-    { keywords: ["ispa"], tarif: 2000700 },
+    { keywords: ["ispa", "Acute Lower Respiratory Infection"], tarif: 2000700 },
     { keywords: ["df","dhf","df dhf","dengue fever","Dengue Haemorrhagic Fever"], tarif: 1959100 },
     { keywords: ["dm","hiperglikemia"], tarif: 3648700 },
     { keywords: ["hypoglikemia"], tarif: 3648700 },
-    { keywords: ["abses + dm"], tarif: 3648700 },
+    { keywords: ["abses dm", "Ulkus Diabetik", "Nekrosis"], tarif: 3648700 },
     { keywords: ["abses + dm level 2"], tarif: 4797000 },
     { keywords: ["abses"], tarif: 1659600 },
-    { keywords: ["abdominal pain","abd pain","vi","viral infection","viral infeksi","Typhoid Fever"], tarif: 1652000 },
-    { keywords: ["dadrs","dads","dyspepsia","bii","bi","Cyclic Vomiting","Diarrhoea And Gastroenteritis","Bacterial Intestinal Infection","bacterial infection","Gastritis","Gea"], tarif: 1361300 },
+    { keywords: ["abdominal pain","abd pain","vi","viral infection","viral infeksi","Typhoid Fever", "Viral Intestinal Infection"], tarif: 1652000 },
+    { keywords: ["bii","bi","Cyclic Vomiting","Diarrhoea And Gastroenteritis","Bacterial Intestinal Infection","bacterial infection","Gastritis","Gea"], tarif: 1361300 },
+    { keywords: ["Gastro-Oesophageal Reflux Disease With Oesophagitis","Dadrs","Dads","Dyspepsia", "Hematoschezia", "Vomitus"], tarif: 1361300 },
     { keywords: ["hematemesis"], tarif: 1361300 },
     { keywords: ["melena anemia"], tarif: 1934300 },
     { keywords: ["vertigo","bppv"], tarif: 1436900 },
-    { keywords: ["convulsion","kds"], tarif: 2766600 },
+    { keywords: ["convulsion","kds", "Kdk"], tarif: 2766600 },
     { keywords: ["ckd"], tarif: 3043000 },
     { keywords: ["hidronefrosis"], tarif: 3581900 },
     { keywords: ["lbp"], tarif: 3000100 },
@@ -54,7 +55,9 @@ const inacbgTarif = [
     { keywords: ["appendicitis acute","App","App Akut","Appendicitis Akut","Acute Appendicitis"], tarif: 3668500 },
     { keywords: ["ht"], tarif: 2119000 },
     { keywords: ["dvt"], tarif: 4668700 },
-    { keywords: ["Kejang Demam Simpleks","KDS"], tarif: 2766600 }
+    { keywords: ["Kejang Demam Simpleks","KDS"], tarif: 2766600 },
+    { keywords: ["TTN"], tarif: 5466100 }
+    
 ];
 
 /* ================= KOMORBID LEVEL 2 ================= */
