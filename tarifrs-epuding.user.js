@@ -15,6 +15,7 @@
 'use strict';
 
 const CACHE_KEY = "smartplus_tarif_cache_v7";
+const AUTH_KEY = "epuding_auth_v1";
 const MAX_PARALLEL = 5;
 
 /* ================= CACHE ================= */
@@ -59,6 +60,52 @@ function ambilTarif(html){
         .replace(/[^0-9]/g,"");
 
     return parseInt(angka,10);
+}
+
+
+/* ================= AUTH ================= */
+
+function getAuth(){
+    try{
+        return JSON.parse(localStorage.getItem(AUTH_KEY));
+    }catch{
+        return null;
+    }
+}
+
+function saveAuth(uname, pass){
+    localStorage.setItem(AUTH_KEY, JSON.stringify({uname, pass}));
+}
+
+async function performLogin(){
+
+    let auth = getAuth();
+    if(!auth){
+        let uname = prompt("Masukkan Username E-Puding:");
+        let pass = prompt("Masukkan Password E-Puding:");
+        if(uname && pass){
+            saveAuth(uname, pass);
+            auth = {uname, pass};
+        }else{
+            return false;
+        }
+    }
+
+    return new Promise(resolve=>{
+        GM_xmlhttpRequest({
+            method: "POST",
+            url: "http://192.168.3.15/puding/admin/login_act.php",
+            data: `uname=${encodeURIComponent(auth.uname)}&pass=${encodeURIComponent(auth.pass)}`,
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            onload: r => {
+                // Biasanya redirect ke indexcasemix atau semacamnya jika berhasil
+                resolve(true);
+            },
+            onerror: () => resolve(false)
+        });
+    });
 }
 
 
@@ -186,29 +233,31 @@ async function processRow(row){
 
     let html=await fetchTarif(id);
 
+    // Cek apakah butuh login
+    if(html && html.includes("Login E-Puding")){
+        console.log("Sesi Epuding habis, mencoba login otomatis...");
+        let success = await performLogin();
+        if(success){
+            html = await fetchTarif(id);
+        }
+    }
+
     let tarif=ambilTarif(html);
 
-    if(tarif===null){
-
+    if(tarif===null && html){
+        // Retry sekali lagi jika gagal ambil tarif tapi html ada (bukan login page)
         let retry=await fetchTarif(id);
         tarif=ambilTarif(retry);
     }
 
     if(tarif!==null){
-
         tarif=Math.round(tarif*1.05);
-
         cache[id]=tarif;
-
         saveCache(cache);
-
         td.innerText=rupiah(tarif);
-
     }else{
-
         td.innerText="-";
     }
-
 }
 
 
