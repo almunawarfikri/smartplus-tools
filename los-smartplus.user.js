@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SmartPlus LOS RS & BPJS
 // @namespace    http://tampermonkey.net/
-// @version      15.8
+// @version      16
 // @description  LOS RS + LOS BPJS dari E-PUDING + cache + fast + sort
 // @match        http://192.168.3.16/smartplus/erm_ranap*
 // @match        http://192.168.3.16/smartplus/nurse_station/eranap*
@@ -29,7 +29,7 @@
 
     function hitungLOS(tgl) {
         if (!tgl) return { text: "-", hari: 0 };
-
+        
         let start = parseDate(tgl);
         if (isNaN(start.getTime())) return { text: "-", hari: 0 };
 
@@ -49,7 +49,7 @@
 
     function hitungLOSBPJS(tgl) {
         if (!tgl) return 0;
-
+        
         let s = parseDate(tgl);
         if (isNaN(s.getTime())) return 0;
 
@@ -66,24 +66,24 @@
 
     function parseDate(str) {
         if (!str) return new Date(NaN);
-
+        
         // Bersihkan teks (hanya ambil angka, dash, titik dua, dan spasi)
         let clean = str.replace(/[^\d\-\s:]/g, "").trim();
-
+        
         // Coba parsing langsung dulu
         let d = new Date(clean.replace(" ", "T"));
         if (!isNaN(d.getTime())) return d;
-
+        
         // Coba tanpa T
         d = new Date(clean);
         if (!isNaN(d.getTime())) return d;
-
+        
         // Coba manual split jika format YYYY-MM-DD HH:mm:ss
         let parts = clean.match(/(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2}):(\d{2})/);
         if (parts) {
             return new Date(parts[1], parts[2] - 1, parts[3], parts[4], parts[5], parts[6]);
         }
-
+        
         return new Date(NaN);
     }
 
@@ -99,22 +99,22 @@
         // Strategy 2: Search specific labels
         let labels = ["Waktu Registrasi", "Regdate"];
         for (let label of labels) {
-            let el = Array.from(doc.querySelectorAll("label, span, td, div")).find(e =>
+            let el = Array.from(doc.querySelectorAll("label, span, td, div")).find(e => 
                 e.innerText.trim().replace(":","") === label
             );
-
+            
             if (el) {
                 // Check sibling
                 let next = el.nextElementSibling;
                 if (next && /[\d\-\s:]{10,}/.test(next.innerText)) return next.innerText.replace(":","").trim();
-
+                
                 // Check parent next sibling (for grid structures)
                 let parent = el.parentElement;
                 if (parent && parent.nextElementSibling) {
                     let v = parent.nextElementSibling.innerText.trim();
                     if (/[\d\-\s:]{10,}/.test(v)) return v.replace(":","").trim();
                 }
-
+                
                 // Check inside parent (for .col-sm-9 structure)
                 if (parent) {
                     let v = parent.querySelector(".col-sm-9, .col-md-9, .col-sm-8, .col-md-8");
@@ -122,7 +122,7 @@
                 }
             }
         }
-
+        
         // Log for debugging if enabled
         console.warn("SmartPlus: Gagal mengambil tanggal registrasi dari HTML");
         return null;
@@ -193,67 +193,81 @@
 
     /* ================= PROSES SEMUA ROW ================= */
 
-    async function proses(rsIndex){
-        let cache=getCache();
-        let rows=document.querySelectorAll("#myTable tbody tr");
-        let jobs=[];
+    async function prosesSatuBaris(row, rsIndex, cache) {
+        let cells = row.querySelectorAll("td");
+        if (!cells[rsIndex]) return;
 
-        for(let row of rows){
-            let cells=row.querySelectorAll("td");
-            if(!cells[rsIndex]) continue;
-
-            if(!row.querySelector(".losbpjs-cell")){
-                let td=document.createElement("td");
-                td.className="losbpjs-cell";
-                cells[rsIndex].after(td);
-            }
-
-            let rsCell=row.querySelectorAll("td")[rsIndex];
-            let bpjsCell=row.querySelector(".losbpjs-cell");
-
-            let link=row.querySelector("td:last-child a");
-            if(!link) continue;
-
-            let key=link.href;
-
-            if(cache[key]){
-                tampilkan(cache[key],rsCell,bpjsCell);
-                continue;
-            }
-
-            rsCell.innerText="Loading...";
-            bpjsCell.innerText="...";
-
-            jobs.push(
-                Promise.race([
-                    fetch(link.href).then(r=>r.text()),
-                    // timeout 8 detik
-                    new Promise((_,reject)=>
-                        setTimeout(()=>reject("timeout"),8000)
-                    )
-                ])
-                .then(async html=>{
-                    let tgl=ambilWaktuRegistrasi(html);
-
-                    if(!tgl){
-                        rsCell.innerText="-";
-                        bpjsCell.innerText="-";
-                        return;
-                    }
-
-                    cache[key]={tgl};
-                    saveCache(cache);
-
-                    tampilkan(cache[key],rsCell,bpjsCell);
-                })
-                .catch(()=>{
-                    rsCell.innerText="-";
-                    bpjsCell.innerText="-";
-                })
-            );
+        if (!row.querySelector(".losbpjs-cell")) {
+            let td = document.createElement("td");
+            td.className = "losbpjs-cell";
+            cells[rsIndex].after(td);
         }
 
-        await Promise.all(jobs);
+        let rsCell = row.querySelectorAll("td")[rsIndex];
+        let bpjsCell = row.querySelector(".losbpjs-cell");
+
+        let link = row.querySelector("td:last-child a");
+        if (!link) {
+            rsCell.innerText = "-";
+            bpjsCell.innerText = "-";
+            return;
+        }
+
+        let key = link.href;
+
+        if (cache[key]) {
+            tampilkan(cache[key], rsCell, bpjsCell);
+            return;
+        }
+
+        rsCell.innerText = "Loading...";
+        bpjsCell.innerText = "...";
+
+        try {
+            const html = await Promise.race([
+                fetch(link.href).then(r => r.text()),
+                new Promise((_, reject) => setTimeout(() => reject("timeout"), 8000))
+            ]);
+
+            let tgl = ambilWaktuRegistrasi(html);
+
+            if (!tgl) {
+                rsCell.innerText = "-";
+                bpjsCell.innerText = "-";
+                return;
+            }
+
+            cache[key] = { tgl };
+            saveCache(cache);
+
+            tampilkan(cache[key], rsCell, bpjsCell);
+        } catch (e) {
+            rsCell.innerText = "-";
+            bpjsCell.innerText = "-";
+        }
+    }
+
+    async function proses(rsIndex) {
+        let cache = getCache();
+        let rows = Array.from(document.querySelectorAll("#myTable tbody tr"));
+        let index = 0;
+
+        async function worker() {
+            while (index < rows.length) {
+                let currentRowIndex = index++; // Get current index and then increment
+                if (currentRowIndex < rows.length) { // Ensure we don't go out of bounds if multiple workers increment simultaneously
+                    let row = rows[currentRowIndex];
+                    await prosesSatuBaris(row, rsIndex, cache);
+                }
+            }
+        }
+
+        let taskPool = [];
+        for (let i = 0; i < MAX_PARALLEL; i++) {
+            taskPool.push(worker());
+        }
+
+        await Promise.all(taskPool);
     }
 
     /* ================= INIT ================= */
