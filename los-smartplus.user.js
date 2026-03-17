@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SmartPlus LOS RS & BPJS
 // @namespace    http://tampermonkey.net/
-// @version      15.7
+// @version      15.8
 // @description  LOS RS + LOS BPJS dari E-PUDING + cache + fast + sort
 // @match        http://192.168.3.16/smartplus/erm_ranap*
 // @match        http://192.168.3.16/smartplus/nurse_station/eranap*
@@ -27,59 +27,104 @@
 
     /* ================= HITUNG LOS RS ================= */
 
-    function hitungLOS(tgl){
-        let start=new Date(tgl.replace(" ","T"));
-        let now=new Date();
-        let diff=now-start;
+    function hitungLOS(tgl) {
+        if (!tgl) return { text: "-", hari: 0 };
 
-        let hari=Math.floor(diff/(1000*60*60*24));
-        let jam=Math.floor((diff%(1000*60*60*24))/(1000*60*60));
+        let start = parseDate(tgl);
+        if (isNaN(start.getTime())) return { text: "-", hari: 0 };
 
-        return {text:`${hari} Hari ${jam} Jam`,hari};
+        let now = new Date();
+        let diff = now - start;
+
+        // Cegah nilai negatif yang aneh
+        if (diff < 0) diff = 0;
+
+        let hari = Math.floor(diff / (1000 * 60 * 60 * 24));
+        let jam = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+        return { text: `${hari} Hari ${jam} Jam`, hari };
     }
 
     /* ================= HITUNG LOS BPJS ================= */
 
-    function hitungLOSBPJS(tgl){
-        let s=new Date(tgl.replace(" ","T"));
-        let n=new Date();
+    function hitungLOSBPJS(tgl) {
+        if (!tgl) return 0;
 
-        let sd=new Date(s.getFullYear(),s.getMonth(),s.getDate());
-        let nd=new Date(n.getFullYear(),n.getMonth(),n.getDate());
+        let s = parseDate(tgl);
+        if (isNaN(s.getTime())) return 0;
 
-        return Math.floor((nd-sd)/(1000*60*60*24))+1;
+        let n = new Date();
+
+        let sd = new Date(s.getFullYear(), s.getMonth(), s.getDate());
+        let nd = new Date(n.getFullYear(), n.getMonth(), n.getDate());
+
+        let diff = Math.floor((nd - sd) / (1000 * 60 * 60 * 24)) + 1;
+        return diff > 0 ? diff : 1;
+    }
+
+    /* ================= DATE PARSER HELPER ================= */
+
+    function parseDate(str) {
+        if (!str) return new Date(NaN);
+
+        // Bersihkan teks (hanya ambil angka, dash, titik dua, dan spasi)
+        let clean = str.replace(/[^\d\-\s:]/g, "").trim();
+
+        // Coba parsing langsung dulu
+        let d = new Date(clean.replace(" ", "T"));
+        if (!isNaN(d.getTime())) return d;
+
+        // Coba tanpa T
+        d = new Date(clean);
+        if (!isNaN(d.getTime())) return d;
+
+        // Coba manual split jika format YYYY-MM-DD HH:mm:ss
+        let parts = clean.match(/(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2}):(\d{2})/);
+        if (parts) {
+            return new Date(parts[1], parts[2] - 1, parts[3], parts[4], parts[5], parts[6]);
+        }
+
+        return new Date(NaN);
     }
 
     /* ================= AMBIL WAKTU REGISTRASI ================= */
 
-    function ambilWaktuRegistrasi(html){
-        let doc=new DOMParser().parseFromString(html,"text/html");
+    function ambilWaktuRegistrasi(html) {
+        let doc = new DOMParser().parseFromString(html, "text/html");
 
-        // Cari semua elemen (bisa label, span, td, dll)
-        let elements = doc.querySelectorAll("label, span, td, div");
+        // Strategy 1: Search by combined text
+        let combined = html.match(/(?:Waktu Registrasi|Regdate)\s*[:]\s*([\d\-\s:]{10,20})/i);
+        if (combined) return combined[1].trim();
 
-        for(let el of elements){
-            let txt = el.innerText.trim();
-            if(txt.includes("Waktu Registrasi") || txt.includes("Regdate")){
-                // Jika label ada di elemen itu sendiri, cari value-nya
-                // Biasanya value ada di parent.querySelector(".col-sm-9") atau di kolom sebelah (jika tabel)
-                let parent = el.parentElement;
-                
-                // Coba ambil dari .col-sm-9 (struktur lama)
-                let v = parent.querySelector(".col-sm-9, .col-md-9");
-                if(v) return v.innerText.replace(":","").trim();
+        // Strategy 2: Search specific labels
+        let labels = ["Waktu Registrasi", "Regdate"];
+        for (let label of labels) {
+            let el = Array.from(doc.querySelectorAll("label, span, td, div")).find(e =>
+                e.innerText.trim().replace(":","") === label
+            );
 
-                // Coba ambil dari sibling (struktur tabel)
+            if (el) {
+                // Check sibling
                 let next = el.nextElementSibling;
-                if(next) return next.innerText.replace(":","").trim();
+                if (next && /[\d\-\s:]{10,}/.test(next.innerText)) return next.innerText.replace(":","").trim();
 
-                // Coba cari di teks itu sendiri setelah titik dua (jika label dan value digabung)
-                if(txt.includes(":")){
-                    let match = txt.match(/(?:Waktu Registrasi|Regdate)\s*:\s*([\d\-\s:]+)/i);
-                    if(match) return match[1].trim();
+                // Check parent next sibling (for grid structures)
+                let parent = el.parentElement;
+                if (parent && parent.nextElementSibling) {
+                    let v = parent.nextElementSibling.innerText.trim();
+                    if (/[\d\-\s:]{10,}/.test(v)) return v.replace(":","").trim();
+                }
+
+                // Check inside parent (for .col-sm-9 structure)
+                if (parent) {
+                    let v = parent.querySelector(".col-sm-9, .col-md-9, .col-sm-8, .col-md-8");
+                    if (v && /[\d\-\s:]{10,}/.test(v.innerText)) return v.innerText.replace(":","").trim();
                 }
             }
         }
+
+        // Log for debugging if enabled
+        console.warn("SmartPlus: Gagal mengambil tanggal registrasi dari HTML");
         return null;
     }
 
