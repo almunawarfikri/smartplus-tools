@@ -1,9 +1,10 @@
 // ==UserScript==
 // @name         Tarif RS SmartPlus (Ultra Fast Parallel)
 // @namespace    http://tampermonkey.net/
-// @version      24.0
+// @version      27.0
 // @description  Ambil Tarif RS SMARTHIS super cepat (5 paralel + cache)
 // @match        http://192.168.3.16/smartplus/erm_ranap*
+// @match        http://192.168.3.16/smartplus/nurse_station/eranap*
 // @updateURL    https://raw.githubusercontent.com/almunawarfikri/smartplus-tools/main/tarifrs-epuding.user.js
 // @downloadURL  https://raw.githubusercontent.com/almunawarfikri/smartplus-tools/main/tarifrs-epuding.user.js
 // @grant        GM_xmlhttpRequest
@@ -16,7 +17,7 @@
 
 const CACHE_KEY = "smartplus_tarif_cache_v7";
 const AUTH_KEY = "epuding_auth_v1";
-const MAX_PARALLEL = 5;
+const MAX_PARALLEL = 4;
 
 /* ================= CACHE ================= */
 
@@ -33,7 +34,7 @@ function saveCache(data){
 }
 
 let cache = loadCache();
-
+let isLoggingIn = false;
 
 /* ================= FORMAT ================= */
 
@@ -79,6 +80,15 @@ function saveAuth(uname, pass){
 
 async function performLogin(){
 
+    if(isLoggingIn){
+        while(isLoggingIn){
+            await new Promise(r => setTimeout(r, 500));
+        }
+        return true;
+    }
+
+    isLoggingIn = true;
+
     let auth = getAuth();
     if(!auth){
         let uname = prompt("Masukkan Username E-Puding:");
@@ -87,9 +97,12 @@ async function performLogin(){
             saveAuth(uname, pass);
             auth = {uname, pass};
         }else{
+            isLoggingIn = false;
             return false;
         }
     }
+
+    console.log("Mencoba login otomatis ke E-Puding...");
 
     return new Promise(resolve=>{
         GM_xmlhttpRequest({
@@ -99,11 +112,22 @@ async function performLogin(){
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded"
             },
+            timeout: 10000,
             onload: r => {
-                // Biasanya redirect ke indexcasemix atau semacamnya jika berhasil
+                isLoggingIn = false;
+                console.log("Login E-Puding Berhasil");
                 resolve(true);
             },
-            onerror: () => resolve(false)
+            onerror: () => {
+                isLoggingIn = false;
+                console.error("Login E-Puding Gagal (Network Error)");
+                resolve(false);
+            },
+            ontimeout: () => {
+                isLoggingIn = false;
+                console.warn("Login E-Puding Gagal (Timeout)");
+                resolve(false);
+            }
         });
     });
 }
@@ -139,15 +163,8 @@ function fetchTarif(id){
 /* ================= ID REG ================= */
 
 function idReg(url){
-
-    let parts=url.split('/');
-    let id=parts.pop();
-
-    if(id.includes('?')){
-        id=id.split('?')[0];
-    }
-
-    return id;
+    let m = url.match(/([0-9]{4}[A-Z]{2}[0-9]+)/);
+    return m ? m[1] : "";
 }
 
 
@@ -231,11 +248,12 @@ async function processRow(row){
         return;
     }
 
+    console.log(`Mengambil tarif untuk ID: ${id}...`);
     let html=await fetchTarif(id);
 
     // Cek apakah butuh login
     if(html && html.includes("Login E-Puding")){
-        console.log("Sesi Epuding habis, mencoba login otomatis...");
+        console.warn(`Sesi habis saat mengambil ID: ${id}, mencoba login ulang...`);
         let success = await performLogin();
         if(success){
             html = await fetchTarif(id);
@@ -244,8 +262,9 @@ async function processRow(row){
 
     let tarif=ambilTarif(html);
 
-    if(tarif===null && html){
+    if(tarif===null && html && !html.includes("Login E-Puding")){
         // Retry sekali lagi jika gagal ambil tarif tapi html ada (bukan login page)
+        console.log(`Gagal parsing ID: ${id}, mencoba ulang...`);
         let retry=await fetchTarif(id);
         tarif=ambilTarif(retry);
     }
@@ -256,6 +275,7 @@ async function processRow(row){
         saveCache(cache);
         td.innerText=rupiah(tarif);
     }else{
+        console.error(`Tarif ID: ${id} Gagal total. (HTML: ${html ? html.length : 0} bytes)`);
         td.innerText="-";
     }
 }
