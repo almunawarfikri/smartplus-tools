@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Dashboard TKMKB
 // @namespace    http://tampermonkey.net/
-// @version      2.6.4
+// @version      2.6.6
 // @description  Dashboard LOS RS + ALOS RS + BOR + LOS Tinggi + Dokter + Export CSV
 // @author       Fikri
 // @match        http://192.168.3.16/smartplus/erm_ranap*
@@ -245,21 +245,25 @@ return h + (j/24);
 /* ================= RUANGAN ================= */
 
 function getRuangan(cells){
+    let raw = "";
+    if(cells[2]) {
+        raw = cells[2].innerText.trim();
+    } else {
+        const ruangCell = cells.find(c =>
+            c.innerText.includes("RPU") ||
+            c.innerText.includes("ICU") ||
+            c.innerText.includes("HCU") ||
+            c.innerText.includes("PICU") ||
+            c.innerText.includes("KORIDOR") ||
+            c.innerText.includes("ISOLASI")
+        );
+        if(!ruangCell) return "";
+        raw = ruangCell.innerText.trim();
+    }
 
-if(cells[2]) return cells[2].innerText.trim();
-
-const ruangCell=cells.find(c=>
-c.innerText.includes("RPU") ||
-c.innerText.includes("ICU") ||
-c.innerText.includes("HCU") ||
-c.innerText.includes("PICU") ||
-c.innerText.includes("KORIDOR") ||
-c.innerText.includes("ISOLASI")
-);
-
-if(!ruangCell) return "";
-
-return ruangCell.innerText.toUpperCase().trim();
+    // OVOID ROOM NUMBERS: Strip digits and anything after a space or colon if it looks like a room
+    // example: "RPU-A 207" -> "RPU-A"
+    return raw.split(/\s+/)[0].toUpperCase().trim();
 }
 
 /* ================= DOKTER ================= */
@@ -503,8 +507,8 @@ const bor = bedOccupancy();
 const div = document.createElement("div");
 div.id = "dashboardPasien";
 
-let textRuang4 = d.los4 > 0 ? `<small>${Object.entries(d.ruang4).map(x => x.join(":")).join(", ")}</small>` : "";
-let textRuang5 = d.los5 > 0 ? `<small>${Object.entries(d.ruang5).map(x => x.join(":")).join(", ")}</small>` : "";
+let textRuang4 = d.los4 > 0 ? `<small>${Object.entries(d.ruang4).map(x => x.join(" : ")).join(", ")}</small>` : "";
+let textRuang5 = d.los5 > 0 ? `<small>${Object.entries(d.ruang5).map(x => x.join(" : ")).join(", ")}</small>` : "";
 
 div.innerHTML = `
     <div style="margin-bottom: 12px; display: flow-root; line-height: 1;">
@@ -538,7 +542,7 @@ div.innerHTML = `
                     </div>
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-size: 10px; font-weight: 700; color: #64748b;">ALOS</span>
+                    <span style="font-size: 10px; font-weight: 700; color: #64748b;">Running ALOS (Harian)</span>
                     <span class="stat-value" style="font-size: 14px;">${d.alos}</span>
                 </div>
             </div>
