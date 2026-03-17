@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SmartPlus LOS RS & BPJS
 // @namespace    http://tampermonkey.net/
-// @version      15.6
+// @version      15.5
 // @description  LOS RS + LOS BPJS dari E-PUDING + cache + fast + sort
 // @match        http://192.168.3.16/smartplus/erm_ranap*
 // @match        http://192.168.3.16/smartplus/nurse_station/eranap*
@@ -55,12 +55,29 @@
     function ambilWaktuRegistrasi(html){
         let doc=new DOMParser().parseFromString(html,"text/html");
 
-        let labels=doc.querySelectorAll("label");
+        // Cari semua elemen (bisa label, span, td, dll)
+        let elements = doc.querySelectorAll("label, span, td, div");
 
-        for(let l of labels){
-            if(l.innerText.includes("Waktu Registrasi")){
-                let v=l.parentElement.querySelector(".col-sm-9");
-                return v? v.innerText.replace(":","").trim() : null;
+        for(let el of elements){
+            let txt = el.innerText.trim();
+            if(txt.includes("Waktu Registrasi") || txt.includes("Regdate")){
+                // Jika label ada di elemen itu sendiri, cari value-nya
+                // Biasanya value ada di parent.querySelector(".col-sm-9") atau di kolom sebelah (jika tabel)
+                let parent = el.parentElement;
+                
+                // Coba ambil dari .col-sm-9 (struktur lama)
+                let v = parent.querySelector(".col-sm-9, .col-md-9");
+                if(v) return v.innerText.replace(":","").trim();
+
+                // Coba ambil dari sibling (struktur tabel)
+                let next = el.nextElementSibling;
+                if(next) return next.innerText.replace(":","").trim();
+
+                // Coba cari di teks itu sendiri setelah titik dua (jika label dan value digabung)
+                if(txt.includes(":")){
+                    let match = txt.match(/(?:Waktu Registrasi|Regdate)\s*:\s*([\d\-\s:]+)/i);
+                    if(match) return match[1].trim();
+                }
             }
         }
         return null;
