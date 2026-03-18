@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Dashboard TKMKB
 // @namespace    http://tampermonkey.net/
-// @version      2.6.7
+// @version      2.6.9
 // @description  Dashboard LOS RS + ALOS RS + BOR + LOS Tinggi + Dokter + Export CSV
 // @author       Fikri
 // @match        http://192.168.3.16/smartplus/erm_ranap*
@@ -37,12 +37,12 @@
     background: rgba(255, 255, 255, 0.98);
     backdrop-filter: blur(8px);
     border: 1px solid rgba(226, 232, 240, 0.9);
-    padding: 12px;
-    margin-bottom: 12px;
+    padding: 8px 12px;
+    margin-bottom: 10px;
     font-family: 'Inter', -apple-system, blinkmacsystemfont, "Segoe UI", roboto, sans-serif;
-    font-size: 13px;
+    font-size: 14px;
     border-radius: 12px;
-    line-height: 1.4;
+    line-height: 1.3;
     box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.05);
     color: #1e293b;
 }
@@ -50,29 +50,29 @@
 .dashboard-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 10px;
-    margin-bottom: 12px;
+    gap: 8px;
+    margin-bottom: 8px;
 }
 
 .stat-card {
     background: #f8fafc;
-    padding: 10px;
+    padding: 8px 10px;
     border-radius: 10px;
     border: 1px solid #f1f5f9;
 }
 
 .stat-label {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.03em;
     color: #64748b;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
     display: block;
 }
 
 .stat-value {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 700;
     color: #0f172a;
 }
@@ -83,7 +83,7 @@
     gap: 4px;
     padding: 2px 8px;
     border-radius: 6px;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
 }
 
@@ -108,7 +108,7 @@
     padding: 2px 8px;
     border-radius: 6px;
     margin: 1px;
-    font-size: 11px;
+    font-size: 12px;
     color: #475569;
     border: 1px solid #f1f5f9;
 }
@@ -119,7 +119,7 @@
     padding: 0px 5px;
     border-radius: 4px;
     margin-left: 6px;
-    font-size: 9px;
+    font-size: 10px;
     font-weight: 800;
 }
 
@@ -129,16 +129,16 @@
     padding: 1px 6px;
     border-radius: 4px;
     font-weight: 800;
-    font-size: 11px;
+    font-size: 12px;
 }
 
 .btn-export {
     background: #10b981;
     color: white;
     border: none;
-    padding: 6px 12px;
+    padding: 6px 14px;
     border-radius: 8px;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     float: right;
@@ -163,8 +163,8 @@
 .los-header {
     font-weight: 700;
     cursor: pointer;
-    padding: 10px 12px;
-    font-size: 13px;
+    padding: 8px 12px;
+    font-size: 14px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -188,7 +188,7 @@
 }
 
 .los-item {
-    padding: 8px 0;
+    padding: 6px 0;
     border-bottom: 1px solid rgba(0,0,0,0.03);
 }
 
@@ -198,7 +198,7 @@
     flex-wrap: wrap;
     gap: 6px;
     align-items: center;
-    font-size: 12px;
+    font-size: 13px;
 }
 
 .los-diagnosa {
@@ -208,10 +208,10 @@
 }
 
 .section-title {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 800;
     color: #94a3b8;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     text-transform: uppercase;
     display: block;
 }
@@ -227,6 +227,17 @@
         let sign = n < 0 ? "-" : "";
         let formatted = Math.abs(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
         return "Rp " + sign + formatted;
+    }
+
+    /* ================= HELPER KOLOM ================= */
+
+    function getLOSColumnIndex() {
+        const headers = document.querySelectorAll("#myTable thead th");
+        for (let i = 0; i < headers.length; i++) {
+            const txt = headers[i].innerText.trim();
+            if (txt === "LOS RS" || txt === "Alamat") return i;
+        }
+        return -1;
     }
 
     /* ================= AMBIL LOS ================= */
@@ -315,17 +326,24 @@
     function pasienLOSTinggi() {
 
         const rows = document.querySelectorAll("#myTable tbody tr");
-
+        const losIdx = getLOSColumnIndex();
         let list = [];
 
         rows.forEach(row => {
-
             const cells = [...row.cells];
-
             const namaCell = cells[5];
             const diagnosaCell = cells[6];
             const dokterCell = cells[7];
-            const losCell = cells.find(c => c.innerText.match(/\d+\s*Hari/i));
+
+            // Prefer the specific LOS column if found, otherwise fallback to finding pattern (but restricted)
+            let losCell = null;
+            if (losIdx !== -1 && cells[losIdx]) {
+                losCell = cells[losIdx];
+            } else {
+                // Fallback: search cells, but prioritize those likely to be LOS
+                losCell = cells.find(c => /^\s*\d+\s*Hari/i.test(c.innerText));
+            }
+
             const tarifCell = row.querySelector(".tarif-cell");
 
             const ruang = getRuangan(cells);
@@ -392,6 +410,7 @@
     function hitungStatistik() {
 
         const rows = document.querySelectorAll("#myTable tbody tr");
+        const losIdx = getLOSColumnIndex();
 
         let total = rows.length;
         let sumLOS_RS = 0;
@@ -425,7 +444,12 @@
 
             /* LOS */
 
-            const losCell = cells.find(c => c.innerText.match(/\d+\s*Hari/i));
+            let losCell = null;
+            if (losIdx !== -1 && cells[losIdx]) {
+                losCell = cells[losIdx];
+            } else {
+                losCell = cells.find(c => /^\s*\d+\s*Hari/i.test(c.innerText));
+            }
 
             if (losCell) {
 
@@ -513,7 +537,7 @@
 
         div.innerHTML = `
     <div style="margin-bottom: 12px; display: flow-root; line-height: 1;">
-        <span style="font-size: 15px; font-weight: 800; color: #0f172a;">DASHBOARD TKMKB</span>
+        <span style="font-size: 16px; font-weight: 800; color: #0f172a;">DASHBOARD TKMKB</span>
         <button class="btn-export" id="exportCSV">
             <span>⬇</span> Export
         </button>
@@ -522,7 +546,7 @@
     <div class="dashboard-grid">
         <div class="stat-card">
             <span class="stat-label">Ringkasan</span>
-            <div class="stat-value">${d.total} <small style="font-weight: 500; color: #64748b;">Pasien</small></div>
+            <div class="stat-value">${d.total} <small style="font-weight: 500; font-size: 12px; color: #64748b;">Pasien</small></div>
             <div style="display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap;">
                 <div class="indicator hijau">≤3: ${d.hijau}</div>
                 <div class="indicator orange">4: ${d.los4}</div>
@@ -535,7 +559,7 @@
             <div style="display: flex; flex-direction: column; gap: 6px;">
                 <div>
                     <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
-                        <span style="font-size: 10px; font-weight: 700;">BOR</span>
+                        <span style="font-size: 11px; font-weight: 700;">BOR</span>
                         <span class="bor-pill">${bor.percent}%</span>
                     </div>
                     <div style="height: 4px; background: #e2e8f0; border-radius: 2px; overflow: hidden;">
@@ -543,22 +567,22 @@
                     </div>
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-size: 10px; font-weight: 700; color: #64748b;">Running ALOS (Harian)</span>
-                    <span class="stat-value" style="font-size: 14px;">${d.alos}</span>
+                    <span style="font-size: 11px; font-weight: 700; color: #64748b;">Running ALOS (Harian)</span>
+                    <span class="stat-value" style="font-size: 16px;">${d.alos}</span>
                 </div>
             </div>
         </div>
 
         <div class="stat-card">
             <span class="stat-label">Distribusi LOS > 3</span>
-            <div style="display: flex; flex-direction: column; gap: 4px; font-size: 11px;">
+            <div style="display: flex; flex-direction: column; gap: 4px; font-size: 12px;">
                 <div style="display: flex; gap: 4px; align-items: center;">
-                    <span class="indicator orange" style="padding: 1px 4px; font-size: 9px;">LOS 4</span>
-                    <span style="color: #64748b; font-size: 10px;">${textRuang4 || '-'}</span>
+                    <span class="indicator orange" style="padding: 1px 4px; font-size: 10px;">LOS 4</span>
+                    <span style="color: #64748b; font-size: 11px;">${textRuang4 || '-'}</span>
                 </div>
                 <div style="display: flex; gap: 4px; align-items: center;">
-                    <span class="indicator merah" style="padding: 1px 4px; font-size: 9px;">LOS ≥5</span>
-                    <span style="color: #64748b; font-size: 10px;">${textRuang5 || '-'}</span>
+                    <span class="indicator merah" style="padding: 1px 4px; font-size: 10px;">LOS ≥5</span>
+                    <span style="color: #64748b; font-size: 11px;">${textRuang5 || '-'}</span>
                 </div>
             </div>
         </div>
@@ -581,12 +605,12 @@
         <div id="losContent" class="los-content">
             ${losTinggi.map((p, i) => `
                 <div class="los-item">
-                    <div class="los-info" style="font-size: 11px;">
+                    <div class="los-info" style="font-size: 12px;">
                         <span style="color: #1e293b; font-weight: 700;">${i + 1}. ${p.nama} (${p.rm})</span>
-                        <span class="badge-dokter" style="margin: 0; padding: 1px 6px; font-size: 10px;">${p.dokter}</span>
-                        <span class="indicator orange" style="font-size: 10px; padding: 1px 5px;">⏱ ${p.losText}</span>
-                        <span class="indicator" style="background: #f1f5f9; color: #475569; font-size: 10px; padding: 1px 5px;">📍 ${p.ruang}</span>
-                        <span style="color: #4f46e5; font-weight: 500; font-size: 11px; margin-left: auto; text-align: right; flex-grow: 1;">${p.diagnosa}</span>
+                        <span class="badge-dokter" style="margin: 0; padding: 1px 6px; font-size: 11px;">${p.dokter}</span>
+                        <span class="indicator orange" style="font-size: 11px; padding: 1px 5px;">⏱ ${p.losText}</span>
+                        <span class="indicator" style="background: #f1f5f9; color: #475569; font-size: 11px; padding: 1px 5px;">📍 ${p.ruang}</span>
+                        <span style="color: #4f46e5; font-weight: 500; font-size: 12px; margin-left: auto; text-align: right; flex-grow: 1;">${p.diagnosa}</span>
                     </div>
                 </div>
             `).join("")}
