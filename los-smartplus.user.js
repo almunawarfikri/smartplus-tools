@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SmartPlus LOS RS & BPJS
 // @namespace    http://tampermonkey.net/
-// @version      16
+// @version      17
 // @description  LOS RS + LOS BPJS dari E-PUDING + cache + fast + sort
 // @match        http://192.168.3.16/smartplus/erm_ranap*
 // @match        http://192.168.3.16/smartplus/nurse_station/eranap*
@@ -14,22 +14,23 @@
     'use strict';
 
     const CACHE_KEY = "smartplus_cache_all";
+    const MAX_PARALLEL = 5;
 
     /* ================= CACHE ================= */
 
-    function getCache(){
-        return JSON.parse(localStorage.getItem(CACHE_KEY)||"{}");
+    function getCache() {
+        return JSON.parse(localStorage.getItem(CACHE_KEY) || "{}");
     }
 
-    function saveCache(cache){
-        localStorage.setItem(CACHE_KEY,JSON.stringify(cache));
+    function saveCache(cache) {
+        localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
     }
 
     /* ================= HITUNG LOS RS ================= */
 
     function hitungLOS(tgl) {
         if (!tgl) return { text: "-", hari: 0 };
-        
+
         let start = parseDate(tgl);
         if (isNaN(start.getTime())) return { text: "-", hari: 0 };
 
@@ -49,7 +50,7 @@
 
     function hitungLOSBPJS(tgl) {
         if (!tgl) return 0;
-        
+
         let s = parseDate(tgl);
         if (isNaN(s.getTime())) return 0;
 
@@ -66,24 +67,24 @@
 
     function parseDate(str) {
         if (!str) return new Date(NaN);
-        
+
         // Bersihkan teks (hanya ambil angka, dash, titik dua, dan spasi)
         let clean = str.replace(/[^\d\-\s:]/g, "").trim();
-        
+
         // Coba parsing langsung dulu
         let d = new Date(clean.replace(" ", "T"));
         if (!isNaN(d.getTime())) return d;
-        
+
         // Coba tanpa T
         d = new Date(clean);
         if (!isNaN(d.getTime())) return d;
-        
+
         // Coba manual split jika format YYYY-MM-DD HH:mm:ss
         let parts = clean.match(/(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2}):(\d{2})/);
         if (parts) {
             return new Date(parts[1], parts[2] - 1, parts[3], parts[4], parts[5], parts[6]);
         }
-        
+
         return new Date(NaN);
     }
 
@@ -99,30 +100,30 @@
         // Strategy 2: Search specific labels
         let labels = ["Waktu Registrasi", "Regdate"];
         for (let label of labels) {
-            let el = Array.from(doc.querySelectorAll("label, span, td, div")).find(e => 
-                e.innerText.trim().replace(":","") === label
+            let el = Array.from(doc.querySelectorAll("label, span, td, div")).find(e =>
+                e.innerText.trim().replace(":", "") === label
             );
-            
+
             if (el) {
                 // Check sibling
                 let next = el.nextElementSibling;
-                if (next && /[\d\-\s:]{10,}/.test(next.innerText)) return next.innerText.replace(":","").trim();
-                
+                if (next && /[\d\-\s:]{10,}/.test(next.innerText)) return next.innerText.replace(":", "").trim();
+
                 // Check parent next sibling (for grid structures)
                 let parent = el.parentElement;
                 if (parent && parent.nextElementSibling) {
                     let v = parent.nextElementSibling.innerText.trim();
-                    if (/[\d\-\s:]{10,}/.test(v)) return v.replace(":","").trim();
+                    if (/[\d\-\s:]{10,}/.test(v)) return v.replace(":", "").trim();
                 }
-                
+
                 // Check inside parent (for .col-sm-9 structure)
                 if (parent) {
                     let v = parent.querySelector(".col-sm-9, .col-md-9, .col-sm-8, .col-md-8");
-                    if (v && /[\d\-\s:]{10,}/.test(v.innerText)) return v.innerText.replace(":","").trim();
+                    if (v && /[\d\-\s:]{10,}/.test(v.innerText)) return v.innerText.replace(":", "").trim();
                 }
             }
         }
-        
+
         // Log for debugging if enabled
         console.warn("SmartPlus: Gagal mengambil tanggal registrasi dari HTML");
         return null;
@@ -130,46 +131,52 @@
 
     /* ================= WARNA LOS ================= */
 
-    function warnaCell(cell,hari){
-        cell.style.background="";
-        cell.style.color="";
-        cell.style.fontWeight="";
+    function warnaCell(cell, hari) {
+        cell.style.background = "";
+        cell.style.color = "";
+        cell.style.fontWeight = "";
 
-        if(hari>=5){
-            cell.style.background="#d50000";
-            cell.style.color="white";
-            cell.style.fontWeight="bold";
+        if (hari >= 5) {
+            cell.style.background = "#d50000";
+            cell.style.color = "white";
+            cell.style.fontWeight = "bold";
         }
-        else if(hari===4){
-            cell.style.background="#ff9800";
-            cell.style.color="white";
+        else if (hari === 4) {
+            cell.style.background = "#ff9800";
+            cell.style.color = "white";
         }
-        else if(hari===3){
-            cell.style.background="#4caf50"; // hijau
-            cell.style.color="white";
+        else if (hari === 3) {
+            cell.style.background = "#4caf50"; // hijau
+            cell.style.color = "white";
         }
     }
 
     /* ================= SETUP KOLOM ================= */
 
-    function setupColumns(){
-        let headers=document.querySelectorAll("#myTable thead th");
-        let rsIndex=-1;
+    function setupColumns() {
+        let table = document.getElementById("myTable");
+        if (!table) return null;
 
-        for(let i=0;i<headers.length;i++){
-            if(headers[i].innerText.trim()==="Alamat"){
-                headers[i].innerText="LOS RS";
-                rsIndex=i;
+        let headers = table.querySelectorAll("thead th");
+        let rsIndex = -1;
+
+        for (let i = 0; i < headers.length; i++) {
+            if (headers[i].innerText.trim() === "Alamat") {
+                headers[i].innerText = "LOS RS";
+                rsIndex = i;
                 break;
             }
         }
 
-        if(rsIndex===-1) return null;
+        if (rsIndex === -1) {
+            console.error("SmartPlus: Kolom 'Alamat' tidak ditemukan untuk diganti menjadi 'LOS RS'");
+            return null;
+        }
 
-        if(!document.querySelector(".losbpjs-header")){
-            let th=document.createElement("th");
-            th.innerText="LOS BPJS";
-            th.className="losbpjs-header";
+        if (!document.querySelector(".losbpjs-header")) {
+            let th = document.createElement("th");
+            th.innerText = "LOS BPJS";
+            th.className = "losbpjs-header";
             headers[rsIndex].after(th);
         }
 
@@ -178,17 +185,25 @@
 
     /* ================= TAMPILKAN DATA ================= */
 
-    function tampilkan(data,rsCell,bpjsCell){
-        let los=hitungLOS(data.tgl);
-        let losBPJS=hitungLOSBPJS(data.tgl);
+    function tampilkan(data, rsCell, bpjsCell) {
+        if (!data || !data.tgl) {
+            rsCell.innerText = "-";
+            rsCell.setAttribute("data-order", 0);
+            bpjsCell.innerText = "-";
+            bpjsCell.setAttribute("data-order", 0);
+            return;
+        }
 
-        rsCell.innerText=los.text;
-        rsCell.setAttribute("data-order",los.hari);
+        let los = hitungLOS(data.tgl);
+        let losBPJS = hitungLOSBPJS(data.tgl);
 
-        bpjsCell.innerText=losBPJS+" Hari";
-        bpjsCell.setAttribute("data-order",losBPJS);
+        rsCell.innerText = los.text;
+        rsCell.setAttribute("data-order", los.hari);
 
-        warnaCell(rsCell,los.hari);
+        bpjsCell.innerText = losBPJS + " Hari";
+        bpjsCell.setAttribute("data-order", losBPJS);
+
+        warnaCell(rsCell, los.hari);
     }
 
     /* ================= PROSES SEMUA ROW ================= */
@@ -197,19 +212,22 @@
         let cells = row.querySelectorAll("td");
         if (!cells[rsIndex]) return;
 
-        if (!row.querySelector(".losbpjs-cell")) {
-            let td = document.createElement("td");
-            td.className = "losbpjs-cell";
-            cells[rsIndex].after(td);
+        // Gunakan existing cell jika sudah ada (mencegah duplikasi td)
+        let bpjsCell = row.querySelector(".losbpjs-cell");
+        if (!bpjsCell) {
+            bpjsCell = document.createElement("td");
+            bpjsCell.className = "losbpjs-cell";
+            cells[rsIndex].after(bpjsCell);
         }
 
-        let rsCell = row.querySelectorAll("td")[rsIndex];
-        let bpjsCell = row.querySelector(".losbpjs-cell");
-
+        let rsCell = cells[rsIndex];
         let link = row.querySelector("td:last-child a");
+
         if (!link) {
             rsCell.innerText = "-";
+            rsCell.setAttribute("data-order", 0);
             bpjsCell.innerText = "-";
+            bpjsCell.setAttribute("data-order", 0);
             return;
         }
 
@@ -233,31 +251,36 @@
 
             if (!tgl) {
                 rsCell.innerText = "-";
+                rsCell.setAttribute("data-order", 0);
                 bpjsCell.innerText = "-";
+                bpjsCell.setAttribute("data-order", 0);
                 return;
             }
 
             cache[key] = { tgl };
-            saveCache(cache);
-
+            // Jangan saveCache di sini agar tidak membebani localStorage berulang kali
             tampilkan(cache[key], rsCell, bpjsCell);
         } catch (e) {
+            console.error("SmartPlus Error Fetch:", e);
             rsCell.innerText = "-";
+            rsCell.setAttribute("data-order", 0);
             bpjsCell.innerText = "-";
+            bpjsCell.setAttribute("data-order", 0);
         }
     }
 
     async function proses(rsIndex) {
         let cache = getCache();
         let rows = Array.from(document.querySelectorAll("#myTable tbody tr"));
+        if (rows.length === 0) return;
+
         let index = 0;
 
         async function worker() {
             while (index < rows.length) {
-                let currentRowIndex = index++; // Get current index and then increment
-                if (currentRowIndex < rows.length) { // Ensure we don't go out of bounds if multiple workers increment simultaneously
-                    let row = rows[currentRowIndex];
-                    await prosesSatuBaris(row, rsIndex, cache);
+                let currentRowIndex = index++;
+                if (currentRowIndex < rows.length) {
+                    await prosesSatuBaris(rows[currentRowIndex], rsIndex, cache);
                 }
             }
         }
@@ -268,17 +291,20 @@
         }
 
         await Promise.all(taskPool);
+
+        // Simpan cache sekali saja setelah semua selesai
+        saveCache(cache);
     }
 
     /* ================= INIT ================= */
 
-    function init(){
-        let rsIndex=setupColumns();
-        if(rsIndex===null) return;
+    function init() {
+        let rsIndex = setupColumns();
+        if (rsIndex === null) return;
 
         proses(rsIndex);
     }
 
-    setTimeout(init,2000);
+    setTimeout(init, 2000);
 
 })();
