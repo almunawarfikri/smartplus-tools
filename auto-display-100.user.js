@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Auto Display 100 E-Ranap Smartplus
 // @namespace    http://tampermonkey.net/
-// @version      1.2
+// @version      1.3
 // @description  Set show entries jadi 100 otomatis
 // @match        http://192.168.3.16/smartplus/erm_ranap*
 // @match        http://192.168.3.16/smartplus/nurse_station/eranap*
