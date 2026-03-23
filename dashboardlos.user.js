@@ -1,11 +1,12 @@
 // ==UserScript==
 // @name         Dashboard TKMKB
 // @namespace    http://tampermonkey.net/
-// @version      2.6.9
+// @version      2.7
 // @description  Dashboard LOS RS + ALOS RS + BOR + LOS Tinggi + Dokter + Export CSV
 // @author       Fikri
 // @match        http://192.168.3.16/smartplus/erm_ranap*
 // @match        http://192.168.3.16/smartplus/nurse_station/eranap*
+// @match        http://103.83.178.90:38/smartplus/erm_ranap
 // @updateURL    https://raw.githubusercontent.com/almunawarfikri/smartplus-tools/main/dashboardlos.user.js
 // @downloadURL  https://raw.githubusercontent.com/almunawarfikri/smartplus-tools/main/dashboardlos.user.js
 // @grant        none
